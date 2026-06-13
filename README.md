@@ -115,3 +115,5 @@ GuardianX utilizes a distributed computing architecture split across three dedic
 * **Remote Appliance Switching:** Dynamic relay/appliance toggling from the UI.
 * **Threat Mitigation:** Instantaneous notifications triggered upon detection of localized smoke or gas breaches.
 * **Affective Feedback:** The robot switches fluidly between a **Happy State** (Secure environment) and an **Alert State** (Hazards detected) using its dual OLED displays.
+
+![GuardianX System Architecture Diagram](images/system-diagram.png)
