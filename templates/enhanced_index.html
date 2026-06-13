@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Revery - Fast Control</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --light: #f8fafc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sensor-card {
+            background: var(--primary);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .sensor-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .camera-container {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--dark);
+            margin-bottom: 15px;
+        }
+
+        .camera-feed {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 300px;
+            margin: 0 auto 20px;
+        }
+
+        .btn {
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-forward { background: var(--secondary); grid-column: 2; }
+        .btn-backward { background: var(--danger); grid-column: 2; grid-row: 2; }
+        .btn-left { background: #f59e0b; grid-column: 1; grid-row: 2; }
+        .btn-right { background: var(--primary); grid-column: 3; grid-row: 2; }
+        .btn-stop { background: #6b7280; grid-column: 2; grid-row: 3; }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .control-btn.active {
+            background: var(--secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Robot Revery</h1>
+            <p>Fast & Stable Control Dashboard</p>
+        </div>
+
+        <div class="status-grid">
+            <div class="status-card">
+                <h3>Arduino Status</h3>
+                <div id="arduino-status">Checking...</div>
+            </div>
+            <div class="status-card">
+                <h3>Camera Status</h3>
+                <div id="camera-status">Checking...</div>
+            </div>
+            <div class="status-card">
+                <h3>Last Update</h3>
+                <div id="last-update">--:--:--</div>
+            </div>
+        </div>
+
+        <div class="sensor-grid">
+            <div class="sensor-card">
+                <h3>Temperature</h3>
+                <div class="sensor-value" id="temp">--°C</div>
+            </div>
+            <div class="sensor-card">
+                <h3>Humidity</h3>
+                <div class="sensor-value" id="hum">--%</div>
+            </div>
+            <div class="sensor-card">
+                <h3>Air Quality</h3>
+                <div class="sensor-value" id="air">--</div>
+            </div>
+            <div class="sensor-card">
+                <h3>Distance</h3>
+                <div class="sensor-value" id="dist">--cm</div>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="panel">
+                <h2>📷 Live Camera</h2>
+                <div class="camera-container">
+                    <img src="/video_feed" class="camera-feed" id="webcam">
+                </div>
+                <div class="control-buttons">
+                    <button class="control-btn" onclick="toggleGesture()" id="gesture-btn">Enable Gesture</button>
+                    <button class="control-btn" onclick="toggleObstacle()" id="obstacle-btn">Enable Obstacle</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>🎮 Manual Control</h2>
+                <div class="control-grid">
+                    <button class="btn btn-forward" onclick="sendCommand('move', 'F')">F</button>
+                    <button class="btn btn-backward" onclick="sendCommand('move', 'B')">B</button>
+                    <button class="btn btn-left" onclick="sendCommand('move', 'L')">L</button>
+                    <button class="btn btn-right" onclick="sendCommand('move', 'R')">R</button>
+                    <button class="btn btn-stop" onclick="sendCommand('move', 'S')">S</button>
+                </div>
+                <div class="control-buttons">
+                    <button class="control-btn" onclick="sendCommand('mode', 'manual')">Manual Mode</button>
+                    <button class="control-btn" onclick="sendCommand('mode', 'obstacle')">Auto Mode</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fast status updates
+        let lastUpdate = 0;
+
+        async function updateStatus() {
+            const now = Date.now();
+            if (now - lastUpdate < 2000) return;
+            lastUpdate = now;
+
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                // Update status
+                document.getElementById('arduino-status').textContent = 
+                    data.arduino_connected ? '✅ Connected' : '❌ Disconnected';
+                document.getElementById('camera-status').textContent = 
+                    data.camera_server_connected ? '✅ Connected' : '❌ Disconnected';
+                document.getElementById('last-update').textContent = 
+                    new Date().toLocaleTimeString();
+
+                // Update sensor data
+                document.getElementById('temp').textContent = data.sensor_data.temp.toFixed(1) + '°C';
+                document.getElementById('hum').textContent = data.sensor_data.hum.toFixed(1) + '%';
+                document.getElementById('air').textContent = data.sensor_data.air;
+                document.getElementById('dist').textContent = data.sensor_data.dist + 'cm';
+
+            } catch (error) {
+                console.log('Status update failed');
+            }
+        }
+
+        // Control functions
+        async function sendCommand(cmd, val) {
+            try {
+                const response = await fetch('/api/command', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({cmd, val})
+                });
+                const data = await response.json();
+                console.log(data.message);
+            } catch (error) {
+                console.log('Command failed');
+            }
+        }
+
+        async function toggleGesture() {
+            const response = await fetch('/api/gesture/control', {method: 'POST'});
+            const data = await response.json();
+            const btn = document.getElementById('gesture-btn');
+            btn.textContent = data.gesture_control_enabled ? 'Disable Gesture' : 'Enable Gesture';
+            btn.classList.toggle('active', data.gesture_control_enabled);
+        }
+
+        async function toggleObstacle() {
+            const response = await fetch('/api/obstacle_avoidance', {method: 'POST'});
+            const data = await response.json();
+            const btn = document.getElementById('obstacle-btn');
+            btn.textContent = data.obstacle_avoidance_enabled ? 'Disable Obstacle' : 'Enable Obstacle';
+            btn.classList.toggle('active', data.obstacle_avoidance_enabled);
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            const keys = {'ArrowUp':'F', 'ArrowDown':'B', 'ArrowLeft':'L', 'ArrowRight':'R', ' ':'S'};
+            if (keys[e.key]) sendCommand('move', keys[e.key]);
+        });
+
+        // Initialize
+        setInterval(updateStatus, 2000);
+        updateStatus();
+    </script>
+</body>
+</html>

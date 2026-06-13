@@ -1,0 +1,93 @@
+import eventlet
+eventlet.monkey_patch()
+
+from flask import Flask, render_template, Response
+from flask_socketio import SocketIO
+import serial
+import threading
+import time
+import os
+
+# Auto-detect Arduino port
+def find_arduino_port():
+    for port in ["/dev/ttyACM0", "/dev/ttyACM1", "/dev/ttyUSB0", "/dev/ttyUSB1"]:
+        if os.path.exists(port):
+            return port
+    return None
+
+ARDUINO_PORT = find_arduino_port()
+BAUD_RATE = 9600
+arduino = None
+
+app = Flask(__name__, template_folder="templates")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+
+# ---- Try connecting to Arduino ----
+try:
+    if ARDUINO_PORT:
+        arduino = serial.Serial(ARDUINO_PORT, BAUD_RATE, timeout=1)
+        print(f"✅ Connected to Arduino on {ARDUINO_PORT}")
+    else:
+        print("❌ No Arduino port detected.")
+except Exception as e:
+    print("❌ Arduino not connected:", e)
+
+# ---- Web routes ----
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+# ---- Stream serial data from Arduino ----
+def read_arduino():
+    if not arduino:
+        return
+    print("🔄 Starting Arduino read loop...")
+    while True:
+        try:
+            line = arduino.readline().decode(errors='ignore').strip()
+            if not line:
+                continue
+            if line.startswith("SENSOR"):
+                parts = line.split(',')
+                if len(parts) == 5:
+                    _, temp, hum, air, dist = parts
+                    data = {
+                        "temp": float(temp) if temp != "nan" else 0,
+                        "hum": float(hum) if hum != "nan" else 0,
+                        "air": int(air),
+                        "dist": int(dist)
+                    }
+                    print("📡 Sent:", data)
+                    socketio.emit('sensor_data', data)
+        except Exception as e:
+            print("⚠️ Serial error:", e)
+            time.sleep(1)
+
+# ---- Receive control commands from webpage ----
+@socketio.on('command')
+def handle_command(data):
+    print("💻 Command:", data)
+    if not arduino:
+        return
+    try:
+        cmd = data.get("cmd")
+        val = data.get("val", "")
+        if cmd == "move":
+            arduino.write(f"MOVE {val}\n".encode())
+        elif cmd == "servo":
+            arduino.write(f"SERVO {val}\n".encode())
+        elif cmd == "mode":
+            arduino.write(f"MODE {val}\n".encode())
+        elif cmd == "sound":
+            os.system(f"ffplay -nodisp -autoexit sounds/{val} &")
+    except Exception as e:
+        print("⚠️ Command error:", e)
+
+# ---- Start background thread ----
+if arduino:
+    threading.Thread(target=read_arduino, daemon=True).start()
+
+# ---- Run server ----
+if __name__ == '__main__':
+    print("🌐 Flask-SocketIO server starting on http://0.0.0.0:5000")
+    socketio.run(app, host='0.0.0.0', port=5000)

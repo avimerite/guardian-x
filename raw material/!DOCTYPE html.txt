@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🤖 Robot Revery - Live Control</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 25px;
+            background: #f8f9fa;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .connected { background: #2ecc71; }
+        .disconnected { background: #e74c3c; }
+        .webcam-active { background: #3498db; }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .panel h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .sensor-card {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .sensor-card h3 {
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .sensor-value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .camera-feed {
+            text-align: center;
+            position: relative;
+        }
+        
+        .camera-feed img {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 10px;
+            border: 3px solid #bdc3c7;
+        }
+        
+        .camera-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(52, 152, 219, 0.9);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .servo-control {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .servo-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .servo-label {
+            font-weight: 600;
+            min-width: 100px;
+            color: #2c3e50;
+        }
+        
+        .servo-value {
+            font-weight: bold;
+            color: #3498db;
+            min-width: 50px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+        }
+        
+        .motor-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .motor-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 300px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-forward { background: #2ecc71; color: white; }
+        .btn-backward { background: #e74c3c; color: white; }
+        .btn-left { background: #f39c12; color: white; }
+        .btn-right { background: #3498db; color: white; }
+        .btn-stop { background: #95a5a6; color: white; }
+        .btn-mode { background: #9b59b6; color: white; margin: 5px; }
+        .btn-test { background: #e67e22; color: white; margin: 5px; }
+        
+        .command-status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .status-success { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .status-info { background: #d1ecf1; color: #0c5460; }
+        
+        .camera-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .quality-controls {
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        .quality-controls button {
+            padding: 8px 15px;
+            margin: 0 5px;
+            background: #7f8c8d;
+            color: white;
+        }
+        
+        .quality-controls button:hover {
+            background: #95a5a6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Robot Revery - Live Control</h1>
+            <p>Real-time Webcam Feed & Robot Control</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-indicator connected" id="system-indicator"></div>
+                <span id="system-text">System Ready</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator webcam-active" id="webcam-indicator"></div>
+                <span id="webcam-text">Webcam Live</span>
+            </div>
+            <div class="status-item">
+                <span>Last Update: </span>
+                <span id="last-update">--:--:--</span>
+            </div>
+        </div>
+
+        <div id="command-status"></div>
+
+        <div class="dashboard">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Sensor Data -->
+                <div class="panel">
+                    <h2>📊 Live Sensor Data</h2>
+                    <div class="sensor-grid">
+                        <div class="sensor-card">
+                            <h3>🌡 Temperature</h3>
+                            <div class="sensor-value" id="temp">-- °C</div>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>💧 Humidity</h3>
+                            <div class="sensor-value" id="hum">-- %</div>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>🌬 Air Quality</h3>
+                            <div class="sensor-value" id="air">--</div>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>📏 Distance</h3>
+                            <div class="sensor-value" id="dist">-- cm</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 10px;">
+                        <button onclick="refreshSensors()" style="background: #3498db;">🔄 Refresh Sensors</button>
+                    </div>
+                </div>
+
+                <!-- Servo Control -->
+                <div class="panel">
+                    <h2>🎚 Servo Control</h2>
+                    <div class="servo-control">
+                        <div class="servo-item">
+                            <div class="servo-label">Left Arm</div>
+                            <input type="range" min="0" max="180" value="90" oninput="setServo(1, this.value)">
+                            <div class="servo-value" id="servo1-value">90°</div>
+                        </div>
+                        <div class="servo-item">
+                            <div class="servo-label">Left Elbow</div>
+                            <input type="range" min="0" max="180" value="90" oninput="setServo(2, this.value)">
+                            <div class="servo-value" id="servo2-value">90°</div>
+                        </div>
+                        <div class="servo-item">
+                            <div class="servo-label">Right Arm</div>
+                            <input type="range" min="0" max="180" value="90" oninput="setServo(3, this.value)">
+                            <div class="servo-value" id="servo3-value">90°</div>
+                        </div>
+                        <div class="servo-item">
+                            <div class="servo-label">Right Elbow</div>
+                            <input type="range" min="0" max="180" value="90" oninput="setServo(4, this.value)">
+                            <div class="servo-value" id="servo4-value">90°</div>
+                        </div>
+                        <div class="servo-item">
+                            <div class="servo-label">Head</div>
+                            <input type="range" min="0" max="180" value="90" oninput="setServo(5, this.value)">
+                            <div class="servo-value" id="servo5-value">90°</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-column">
+                <!-- Webcam Feed -->
+                <div class="panel">
+                    <h2>📷 Live Webcam Feed</h2>
+                    <div class="camera-feed">
+                        <div class="camera-status" id="webcam-status">LIVE</div>
+                        <img src="/video_feed" alt="Live Webcam Feed" id="webcam-img">
+                    </div>
+                    
+                    <div class="camera-controls">
+                        <button class="btn-test" onclick="testWebcam()">Test Webcam</button>
+                        <button class="btn-test" onclick="restartCamera()">Restart Camera</button>
+                        <button class="btn-test" onclick="checkSystemStatus()">System Status</button>
+                    </div>
+                    
+                    <div class="quality-controls">
+                        <label>Quality: </label>
+                        <button onclick="setCameraQuality('sd')">SD (640x480)</button>
+                        <button onclick="setCameraQuality('hd')">HD (1280x720)</button>
+                    </div>
+                </div>
+
+                <!-- Motor Control -->
+                <div class="panel">
+                    <h2>🕹 Motor Control</h2>
+                    <div class="motor-control">
+                        <div class="motor-buttons">
+                            <button class="btn-forward" onclick="sendCommand('move', 'F')">Forward</button>
+                            <button class="btn-backward" onclick="sendCommand('move', 'B')">Backward</button>
+                            <button class="btn-left" onclick="sendCommand('move', 'L')">Left</button>
+                            <button class="btn-right" onclick="sendCommand('move', 'R')">Right</button>
+                            <button class="btn-stop" onclick="sendCommand('move', 'S')">Stop</button>
+                        </div>
+                    </div>
+
+                    <!-- Mode Control -->
+                    <div style="text-align: center; margin-top: 20px;">
+                        <h3>🔧 Operation Mode</h3>
+                        <button class="btn-mode" onclick="sendCommand('mode', 'manual')">Manual Mode</button>
+                        <button class="btn-mode" onclick="sendCommand('mode', 'obstacle')">Obstacle Mode</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update sensor data
+        function refreshSensors() {
+            fetch('/api/sensors')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('temp').textContent = data.temp.toFixed(1) + ' °C';
+                    document.getElementById('hum').textContent = data.hum.toFixed(1) + ' %';
+                    document.getElementById('air').textContent = data.air;
+                    document.getElementById('dist').textContent = data.dist + ' cm';
+                    document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+                    showStatus('Sensor data updated', 'success');
+                })
+                .catch(error => {
+                    showStatus('Failed to get sensor data', 'error');
+                });
+        }
+
+        // Send command to robot
+        function sendCommand(cmd, val) {
+            fetch('/api/command', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ cmd: cmd, val: val })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showStatus(data.message, data.status);
+            })
+            .catch(error => {
+                showStatus('Command failed', 'error');
+            });
+        }
+
+        // Set servo position
+        function setServo(servoId, angle) {
+            sendCommand('servo', `${servoId},${angle}`);
+            document.getElementById(`servo${servoId}-value`).textContent = angle + '°';
+        }
+
+        // Test webcam
+        function testWebcam() {
+            fetch('/api/webcam_test')
+                .then(response => response.json())
+                .then(data => {
+                    showStatus(`Webcam: ${data.message}`, data.status === 'working' ? 'success' : 'info');
+                    updateWebcamStatus(data.status === 'working');
+                })
+                .catch(error => {
+                    showStatus('Webcam test failed', 'error');
+                    updateWebcamStatus(false);
+                });
+        }
+
+        // Restart camera
+        function restartCamera() {
+            showStatus('Restarting camera...', 'info');
+            fetch('/api/camera/restart')
+                .then(response => response.json())
+                .then(data => {
+                    showStatus(data.message, data.status);
+                    // Reload the video feed after a short delay
+                    setTimeout(() => {
+                        document.getElementById('webcam-img').src = '/video_feed?t=' + new Date().getTime();
+                    }, 2000);
+                })
+                .catch(error => {
+                    showStatus('Camera restart failed', 'error');
+                });
+        }
+
+        // Set camera quality
+        function setCameraQuality(quality) {
+            fetch('/api/camera/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ setting: 'resolution', value: quality })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showStatus(data.message, data.status);
+                // Refresh the video feed
+                setTimeout(() => {
+                    document.getElementById('webcam-img').src = '/video_feed?t=' + new Date().getTime();
+                }, 1000);
+            })
+            .catch(error => {
+                showStatus('Quality change failed', 'error');
+            });
+        }
+
+        // Check system status
+        function checkSystemStatus() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusMsg = `Arduino: ${data.arduino_connected ? 'Connected' : 'Disconnected'} | Webcam: ${data.webcam_connected ? 'Live' : 'Offline'}`;
+                    showStatus(statusMsg, 'info');
+                    updateWebcamStatus(data.webcam_connected);
+                    
+                    // Update system indicator
+                    const systemIndicator = document.getElementById('system-indicator');
+                    const systemText = document.getElementById('system-text');
+                    if (data.arduino_connected || data.webcam_connected) {
+                        systemIndicator.className = 'status-indicator connected';
+                        systemText.textContent = 'System Ready';
+                    } else {
+                        systemIndicator.className = 'status-indicator disconnected';
+                        systemText.textContent = 'System Offline';
+                    }
+                })
+                .catch(error => {
+                    showStatus('Status check failed', 'error');
+                });
+        }
+
+        // Update webcam status
+        function updateWebcamStatus(isWorking) {
+            const indicator = document.getElementById('webcam-indicator');
+            const text = document.getElementById('webcam-text');
+            const status = document.getElementById('webcam-status');
+            
+            if (isWorking) {
+                indicator.className = 'status-indicator webcam-active';
+                text.textContent = 'Webcam Live';
+                status.textContent = 'LIVE';
+                status.style.background = 'rgba(52, 152, 219, 0.9)';
+            } else {
+                indicator.className = 'status-indicator disconnected';
+                text.textContent = 'Webcam Offline';
+                status.textContent = 'OFFLINE';
+                status.style.background = 'rgba(231, 76, 60, 0.9)';
+            }
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('command-status');
+            statusDiv.textContent = message;
+            statusDiv.className = `command-status status-${type}`;
+            
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = 'command-status';
+            }, 3000);
+        }
+
+        // Webcam error handling
+        function setupWebcamHandlers() {
+            const webcamImg = document.getElementById('webcam-img');
+            
+            webcamImg.onerror = function() {
+                updateWebcamStatus(false);
+                showStatus('Webcam feed error - attempting recovery...', 'error');
+                // Try to restart camera after error
+                setTimeout(restartCamera, 3000);
+            };
+
+            webcamImg.onload = function() {
+                updateWebcamStatus(true);
+            };
+        }
+
+        // Auto-refresh sensors every 3 seconds
+        setInterval(refreshSensors, 3000);
+        
+        // Initial load
+        document.addEventListener('DOMContentLoaded', function() {
+            setupWebcamHandlers();
+            refreshSensors();
+            checkSystemStatus();
+        });
+    </script>
+</body>
+</html>
